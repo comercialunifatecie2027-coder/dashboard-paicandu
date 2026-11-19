@@ -169,6 +169,9 @@
 // e guarda só no navegador de quem digitou (nunca vai para o GitHub).
 let API_KEY = "";
 const API = "https://api.g1.datacrazy.io/api/v1";
+// Versão publicada: a chave vai CRIPTOGRAFADA com a senha do dashboard (preenchido pelo publicar_site.py).
+// Só quem digita a senha certa consegue abrir a chave. No arquivo local fica null.
+const CHAVE_CIFRADA = {"v":1,"iter":600000,"sal":"l0oetwuPEvaRjXHMnrirAA==","nonce":"chBdkzNYGGmHOzzo7S3RHw==","dados":"tfuIV78tUJVeLsrcMMjx0VTtlbdzE/lBnvVv6YdONEfjo5WvSsmtgSggQBEJVifRwtyzXarlUpHFiDHblgMeynsm7nskB+ZdTsisZW+h7YP/5kPNxbss9mjCTswMnkcqj7nArOdd64HMHE3k5BizvvH6bI+jgZCzN17W2Rm0j4GHU3KEVBTP48r9CeBVQGvJbrrGpxs3tE05/3CZMY76NDhCI86D754tthuqU2sfDL9APvHwkdG78qB1VqBqyrrpYSkELe1WBiwEPC3au0PiLowN5/f9DPAZ0sNLcWhlU9u82TRIaVrCsjN5so6BEZJxWI5OAvGsGPS2SC4OY+qYD1GF7/KOUKAz4SH0Ujg3NXrjlfETZzL5cLlkhkZWDNOo2GMdR+7HcCY=","tag":"GohuzSfMVhDiEP/V+5mzmPFIiM8804BQiDkQiYVCe/8="};
 const ATUALIZAR_SEG = 30;     // dados de hoje: a cada 30 s
 const HISTORICO_MIN = 10;     // dias anteriores (até 1 mês): recarregados a cada 10 min
 const TAGS_ORIGEM = ["PAIÇANDU"];              // leads: criados com alguma destas tags
@@ -211,23 +214,56 @@ const titulo = s => (s||"").trim().toLowerCase().split(/\s+/).map((w,i)=> i>0 &&
 const CHAVE_KEY = "paicandu_dc_chave";
 const CHAVE_NO_ARQUIVO = !!API_KEY;
 function lerChave(){ try{ return localStorage.getItem(CHAVE_KEY)||""; }catch(_){ return ""; } }
+
+// Abre a chave criptografada com a senha (PBKDF2-SHA256 + fluxo HMAC-SHA256 + verificação HMAC).
+// Mesmo formato gerado pelo definir_senha.py. Devolve a chave, ou null se a senha estiver errada.
+const b64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+async function abrirChave(senha){
+  const c = CHAVE_CIFRADA, sub = crypto.subtle;
+  const sal = b64(c.sal), nonce = b64(c.nonce), ct = b64(c.dados), tag = b64(c.tag);
+  const base = await sub.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(await sub.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:sal, iterations:c.iter}, base, 512));
+  const hk = k => sub.importKey("raw", k, {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+  const [kc, km] = await Promise.all([hk(bits.slice(0,32)), hk(bits.slice(32))]);
+  const junta = (...a) => { const r = new Uint8Array(a.reduce((n,x)=>n+x.length,0)); let o=0; for(const x of a){ r.set(x,o); o+=x.length; } return r; };
+  const calc = new Uint8Array(await sub.sign("HMAC", km, junta(sal, nonce, ct)));
+  let dif = calc.length ^ tag.length; for(let i=0;i<calc.length;i++) dif |= calc[i]^tag[i];
+  if(dif) return null;                                   // senha errada
+  const out = new Uint8Array(ct.length);
+  for(let b=0; b*32<ct.length; b++){
+    const cont = new Uint8Array(4); new DataView(cont.buffer).setUint32(0,b);
+    const ks = new Uint8Array(await sub.sign("HMAC", kc, junta(nonce, cont)));
+    for(let i=0;i<32 && b*32+i<ct.length;i++) out[b*32+i] = ct[b*32+i]^ks[i];
+  }
+  return new TextDecoder().decode(out);
+}
+
 let pedindo = null;
 function pedirChave(erro){
   if(pedindo) return pedindo;
+  const comSenha = !!CHAVE_CIFRADA;
   pedindo = new Promise(ok=>{
     const f = document.createElement("div");
     f.className = "login";
     f.innerHTML = `<form class="bloco"><img class="logo" src="logoU.png" alt="">
       <h1>Dashboard Comercial Paiçandu</h1>
-      <label>Chave de acesso do Datacrazy<input type="password" autocomplete="off" required></label>
-      ${erro?'<div class="msg">Chave inválida. Confira e tente de novo.</div>':""}
+      <label>${comSenha?"Senha":"Chave de acesso do Datacrazy"}<input type="password" autocomplete="${comSenha?"current-password":"off"}" required></label>
+      <div class="msg">${erro ? (comSenha?"Senha incorreta. Tente de novo.":"Chave inválida. Confira e tente de novo.") : ""}</div>
       <label class="lembrar"><input type="checkbox" checked> Lembrar neste computador</label>
       <button class="btn ativo" type="submit">Entrar</button></form>`;
     document.body.appendChild(f);
-    const inp = f.querySelector("input[type=password]"); inp.focus();
-    f.querySelector("form").addEventListener("submit", e=>{
+    const inp = f.querySelector("input[type=password]"), msg = f.querySelector(".msg"), btn = f.querySelector("button");
+    inp.focus();
+    f.querySelector("form").addEventListener("submit", async e=>{
       e.preventDefault();
-      API_KEY = inp.value.trim();
+      let chave = inp.value.trim();
+      if(comSenha){
+        btn.disabled = true; btn.textContent = "Verificando…"; msg.textContent = "";
+        try{ chave = await abrirChave(inp.value); }catch(_){ chave = null; }
+        btn.disabled = false; btn.textContent = "Entrar";
+        if(!chave){ msg.textContent = "Senha incorreta. Tente de novo."; inp.select(); return; }
+      }
+      API_KEY = chave;
       try{ if(f.querySelector("input[type=checkbox]").checked) localStorage.setItem(CHAVE_KEY, API_KEY); else localStorage.removeItem(CHAVE_KEY); }catch(_){}
       f.remove(); pedindo = null; ok();
     });
