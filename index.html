@@ -67,16 +67,30 @@
   .cmp{font-size:11px;color:var(--muted);margin-top:4px}
   .cmp .up{color:#3fbf2a} .cmp .dn{color:#ef4444}
   .meta{margin-bottom:14px}
-  .meta-corpo{display:grid;grid-template-columns:minmax(200px,auto) 1fr auto auto;gap:24px;align-items:center;margin-top:12px}
-  .meta-num{display:flex;align-items:baseline;gap:8px}
-  .meta-num b{font-size:40px;line-height:1}
-  .meta-num span{color:var(--muted);font-size:14px}
+  .meta-corpo{display:grid;grid-template-columns:auto auto auto minmax(120px,1fr) auto auto;gap:28px;align-items:center;margin-top:12px}
+  .meta-num{display:flex;flex-direction:column;gap:2px}
+  .meta-num span{color:var(--muted);font-size:12px}
+  .meta-num b{font-size:36px;line-height:1}
+  .meta-num small{font-size:12px;color:var(--muted);font-weight:400;margin-left:4px}
+  .meta-num .definir{background:none;border:1px dashed #555;color:var(--muted);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+  .meta-num .definir:hover{color:#fff;border-color:#888}
+  /* Aba de edição da meta (botão ao lado do Excel) */
+  header{position:relative}
+  .pmeta{position:absolute;right:0;top:40px;z-index:25;width:min(320px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);
+         border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:12px}
+  .pmeta h3{font-size:14px;font-weight:600}
+  .pmeta .lin{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+  .pmeta .lin span{color:var(--muted)}
+  .pmeta .lin b{font-size:20px}
+  .pmeta input{width:110px;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:#fff;font:inherit;font-size:18px;font-weight:700;text-align:right}
+  .pmeta .acoes{display:flex;gap:8px}
+  .pmeta .acoes .btn{flex:1;padding:8px}
+  .pmeta .nota{font-size:11px;color:var(--muted)}
+  [hidden]{display:none!important}
   .prog{height:12px;background:var(--card2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
   .prog>div{height:100%;background:var(--verde);transition:width .4s}
   .meta-info{font-size:12px;color:var(--muted);white-space:nowrap}
   .meta-info b{display:block;font-size:18px;color:var(--txt)}
-  .meta-edit{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
-  .meta-edit input{width:80px;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:4px 6px;color:#fff;font:inherit}
   /* Calendário do mês */
   .cal{margin-top:14px}
   .cal-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -111,7 +125,7 @@
   .erro{background:#3b0d0d;color:#fecaca;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:none}
 
   @media (max-width:900px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} .grafico{gap:6px} .valor{font-size:13px}
-    .meta-corpo{grid-template-columns:1fr 1fr;gap:14px} .meta-corpo .prog{grid-column:1/-1;order:-1}
+    .meta-corpo{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px} .meta-corpo .prog{grid-column:1/-1} .meta-num b{font-size:28px}
     .cal-grade{gap:4px} .dia{padding:6px;min-height:78px} .dia .m{font-size:17px} .dia .c .fr,.dia small{display:none} }
   @media (max-width:560px){ .dia .l,.dia .c{font-size:10.5px} }
   @media (max-width:560px){ body{padding:12px 12px 24px} .card .big{font-size:34px} .eixo .s{display:none} .sub{font-size:10.5px} }
@@ -127,16 +141,22 @@
   </div>
   <nav class="btns ferr">
     <button class="btn" id="btnCsv" title="Baixar leads, matrículas e conversão por dia (último mês) para abrir no Excel">⬇ Excel</button>
+    <button class="btn" id="btnMeta" aria-expanded="false" aria-controls="pmeta" title="Editar a meta do mês">🎯 Meta</button>
   </nav>
+  <form class="pmeta" id="pmeta" hidden>
+    <h3 id="pmetaTit">Meta do mês</h3>
+    <label class="lin"><span>A meta é</span><input id="metaInp" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+    <div class="lin"><span>Fizemos</span><b class="verde num" id="pmetaFiz">…</b></div>
+    <div class="lin"><span>Falta</span><b class="num" id="pmetaFalta">…</b></div>
+    <div class="acoes"><button type="submit" class="btn ativo">Salvar</button><button type="button" class="btn" id="pmetaFechar">Fechar</button></div>
+    <div class="nota">A meta fica salva neste navegador (cada computador/TV guarda a sua) e vale só para este mês.</div>
+  </form>
 </header>
 
 <div id="erro" class="erro"></div>
 
 <section class="bloco meta">
-  <div class="graf-top" style="margin-bottom:0">
-    <h2>Meta do mês <span class="sub-h" id="metaSub"></span></h2>
-    <div class="meta-edit"><label for="metaInp">Meta de matrículas:</label><input id="metaInp" type="number" min="0" step="1" placeholder="ex.: 60"></div>
-  </div>
+  <h2>Meta do mês <span class="sub-h" id="metaSub"></span></h2>
   <div id="meta"><div class="aviso">Carregando…</div></div>
 </section>
 
@@ -460,29 +480,60 @@ function comparativo(){
   return `<div class="cmp" title="Ontem até ${h}: ${fmtN(l0)} leads e ${fmtN(m0)} matrículas">vs ontem até ${h}: ${d(S.hoje.mats.length,m0)} matr. · ${d(S.hoje.leads.length,l0)} leads</div>`;
 }
 
-// Meta do mês (guardada só neste computador) e projeção pelo ritmo atual
-const META_KEY = "paicandu_meta_mes";
-const lerMeta = () => { try{ return parseInt(localStorage.getItem(META_KEY)||"",10) || 0; }catch(_){ return 0; } };
+// Meta do mês (guardada só neste navegador, uma por mês) e projeção pelo ritmo atual
+const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const metaKey = () => { const d=new Date(); return `paicandu_meta_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
+const lerMeta = () => { try{ return parseInt(localStorage.getItem(metaKey())||"",10) || 0; }catch(_){ return 0; } };
+try{ const antiga = localStorage.getItem("paicandu_meta_mes");        // meta da versão anterior (campo único)
+  if(antiga){ if(!localStorage.getItem(metaKey())) localStorage.setItem(metaKey(), antiga); localStorage.removeItem("paicandu_meta_mes"); } }catch(_){}
+const salvarMeta = n => { try{ n>0 ? localStorage.setItem(metaKey(), String(n)) : localStorage.removeItem(metaKey()); }catch(_){} };
+// Matrículas feitas no mês vigente (null enquanto o histórico carrega)
+function feitasNoMes(){
+  const h0 = inicioDia(new Date());
+  const v = dados(intervalo(new Date(h0.getFullYear(), h0.getMonth(), 1), h0));
+  return v.carregando ? null : v;
+}
 function renderMeta(){
   const agora = new Date(), h0 = inicioDia(agora);
   const ini = new Date(h0.getFullYear(), h0.getMonth(), 1);
   const diasMes = new Date(h0.getFullYear(), h0.getMonth()+1, 0).getDate();
-  const mes = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][h0.getMonth()];
-  $("#metaSub").textContent = `${mes} · dia ${h0.getDate()} de ${diasMes}`;
-  const v = dados(intervalo(ini, h0));
-  if(v.carregando){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
+  $("#metaSub").textContent = `${MESES[h0.getMonth()]} · dia ${h0.getDate()} de ${diasMes}`;
+  atualizarPainelMeta();
+  const v = feitasNoMes();
+  if(!v){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
   const decorrido = (h0.getDate()-1) + (agora-h0)/86400000;          // dias do mês já passados (com fração de hoje)
   const proj = decorrido>0 ? Math.round(v.m/decorrido*diasMes) : v.m;
   const meta = lerMeta();
   const pct = meta ? Math.min(100, v.m*100/meta) : 0;
   const faltam = Math.max(0, meta - v.m), diasRest = diasMes - h0.getDate() + 1;
   $("#meta").innerHTML = `<div class="meta-corpo">
-    <div class="meta-num"><b class="verde num">${fmtN(v.m)}</b><span>${meta?`de ${fmtN(meta)} matrículas (${fmtP(v.m*100/meta)})`:"matrículas no mês"}</span></div>
-    <div class="prog" title="${meta?"":"Digite a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
+    <div class="meta-num"><span>A meta é</span>${meta ? `<b class="num">${fmtN(meta)}</b>` : `<button type="button" class="definir" data-abrir-meta>Definir meta</button>`}</div>
+    <div class="meta-num"><span>Fizemos</span><b class="verde num">${fmtN(v.m)}${meta?`<small>${fmtP(v.m*100/meta)}</small>`:""}</b></div>
+    <div class="meta-num"><span>Falta</span><b class="num">${meta ? (faltam ? fmtN(faltam) : `<span class="verde" style="font-size:inherit">Meta batida! ✔</span>`) : "—"}</b></div>
+    <div class="prog" title="${meta?`${fmtP(v.m*100/meta)} da meta`:"Defina a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
     <div class="meta-info">Projeção para o fim do mês<b class="num">${fmtN(proj)}</b></div>
-    <div class="meta-info">${meta ? (faltam ? `Faltam · por dia até o fim<b class="num">${fmtN(faltam)} · ${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>` : `Meta batida!<b class="verde">✔</b>`)
+    <div class="meta-info">${meta && faltam ? `Por dia até o fim do mês<b class="num">${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>`
                 : `Conversão no mês<b class="laranja num">${fmtConv(v.m,v.l)}</b>`}</div>
   </div>`;
+}
+
+/* ---------- Aba de edição da meta (botão "Meta" ao lado do Excel) ---------- */
+function atualizarPainelMeta(){
+  if($("#pmeta").hidden) return;
+  const v = feitasNoMes();
+  const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0);
+  $("#pmetaTit").textContent = `Meta de ${MESES[new Date().getMonth()]}`;
+  $("#pmetaFiz").textContent = v ? fmtN(v.m) : "…";
+  $("#pmetaFalta").textContent = !v ? "…" : !meta ? "—" : v.m>=meta ? "Meta batida! ✔" : fmtN(meta - v.m);
+}
+function abrirPainelMeta(){
+  $("#pmeta").hidden = false; $("#btnMeta").setAttribute("aria-expanded","true"); $("#btnMeta").classList.add("ativo");
+  $("#metaInp").value = lerMeta() || "";
+  atualizarPainelMeta();
+  $("#metaInp").focus(); $("#metaInp").select();
+}
+function fecharPainelMeta(){
+  $("#pmeta").hidden = true; $("#btnMeta").setAttribute("aria-expanded","false"); $("#btnMeta").classList.remove("ativo");
 }
 
 // Calendário do mês vigente: matrículas, leads e conversão de cada dia
@@ -567,11 +618,17 @@ function selecionar(el){
   S.sel = el.dataset.sel; render();
 }
 $("#cards").addEventListener("click", e=>selecionar(e.target.closest("[data-sel]")));
-$("#metaInp").value = lerMeta() || "";
-$("#metaInp").addEventListener("input", e=>{
-  try{ localStorage.setItem(META_KEY, String(Math.max(0, parseInt(e.target.value,10)||0))); }catch(_){}
-  if(S.pronto) renderMeta();
+$("#btnMeta").addEventListener("click", e=>{ e.stopPropagation(); $("#pmeta").hidden ? abrirPainelMeta() : fecharPainelMeta(); });
+$("#metaInp").addEventListener("input", atualizarPainelMeta);          // Falta muda enquanto digita
+$("#pmeta").addEventListener("submit", e=>{
+  e.preventDefault();
+  salvarMeta(Math.max(0, parseInt($("#metaInp").value,10) || 0));
+  fecharPainelMeta(); if(S.pronto) renderMeta();
 });
+$("#pmetaFechar").addEventListener("click", fecharPainelMeta);
+$("#meta").addEventListener("click", e=>{ if(e.target.closest("[data-abrir-meta]")){ e.stopPropagation(); abrirPainelMeta(); } });
+document.addEventListener("click", e=>{ if(!$("#pmeta").hidden && !e.target.closest("#pmeta")) fecharPainelMeta(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#pmeta").hidden) fecharPainelMeta(); });
 $("#btnCsv").addEventListener("click", exportarCsv);
 $("#cards").addEventListener("keydown", e=>{
   if(e.key==="Enter" || e.key===" "){ e.preventDefault(); selecionar(e.target.closest("[data-sel]")); }
