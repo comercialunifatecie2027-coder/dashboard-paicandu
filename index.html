@@ -89,6 +89,9 @@
   .pmeta .acoes{display:flex;gap:8px}
   .pmeta .acoes .btn{flex:1;padding:8px}
   .pmeta .nota{font-size:11px;color:var(--muted)}
+  .pmeta input.fiz{color:var(--verde)}
+  .pmeta .det{font-size:11.5px;color:var(--muted);text-align:right;margin-top:-8px}
+  .meta-num .ext{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:3px}
   [hidden]{display:none!important}
   .prog{height:12px;background:var(--card2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
   .prog>div{height:100%;background:var(--verde);transition:width .4s}
@@ -152,10 +155,11 @@
   <form class="pmeta" id="pmeta" hidden>
     <h3 id="pmetaTit">Meta do mês</h3>
     <label class="lin"><span>A meta é</span><input id="metaInp" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
-    <div class="lin"><span>Fizemos</span><b class="verde num" id="pmetaFiz">…</b></div>
+    <label class="lin"><span>Fizemos</span><input id="fizInp" class="fiz" type="number" min="0" step="1" inputmode="numeric" title="Total de matrículas do mês. Some aqui as matrículas feitas fora do CRM."></label>
+    <div class="det" id="pmetaDet">…</div>
     <div class="lin"><span>Falta</span><b class="num" id="pmetaFalta">…</b></div>
     <div class="acoes"><button type="submit" class="btn ativo">Salvar</button><button type="button" class="btn" id="pmetaFechar">Fechar</button></div>
-    <div class="nota">A meta fica salva neste navegador (cada computador/TV guarda a sua) e vale só para este mês.</div>
+    <div class="nota">Para somar matrículas feitas fora do CRM, aumente o número em "Fizemos". Elas contam só na meta do mês; as novas matrículas do CRM continuam sendo somadas. A meta e as matrículas externas ficam salvas neste navegador (cada computador/TV guarda as suas) e valem só para este mês.</div>
   </form>
 </header>
 
@@ -493,12 +497,17 @@ const lerMeta = () => { try{ return parseInt(localStorage.getItem(metaKey())||""
 try{ const antiga = localStorage.getItem("paicandu_meta_mes");        // meta da versão anterior (campo único)
   if(antiga){ if(!localStorage.getItem(metaKey())) localStorage.setItem(metaKey(), antiga); localStorage.removeItem("paicandu_meta_mes"); } }catch(_){}
 const salvarMeta = n => { try{ n>0 ? localStorage.setItem(metaKey(), String(n)) : localStorage.removeItem(metaKey()); }catch(_){} };
-// Matrículas feitas no mês vigente (null enquanto o histórico carrega)
+// Matrículas externas (feitas fora do CRM): contam SÓ na meta do mês; uma quantidade por mês
+const extraKey = () => metaKey().replace("_meta_","_externas_");
+const lerExtras = () => { try{ return Math.max(0, parseInt(localStorage.getItem(extraKey())||"",10) || 0); }catch(_){ return 0; } };
+const salvarExtras = n => { try{ n>0 ? localStorage.setItem(extraKey(), String(n)) : localStorage.removeItem(extraKey()); }catch(_){} };
+// Matrículas do CRM no mês vigente (null enquanto o histórico carrega)
 function feitasNoMes(){
   const h0 = inicioDia(new Date());
   const v = dados(intervalo(new Date(h0.getFullYear(), h0.getMonth(), 1), h0));
   return v.carregando ? null : v;
 }
+const txtExtras = (crm, ext) => `${fmtN(crm)} do CRM + ${fmtN(ext)} ${ext===1?"externa":"externas"}`;
 function renderMeta(){
   const agora = new Date(), h0 = inicioDia(agora);
   const ini = new Date(h0.getFullYear(), h0.getMonth(), 1);
@@ -508,15 +517,16 @@ function renderMeta(){
   const v = feitasNoMes();
   if(!v){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
   const decorrido = (h0.getDate()-1) + (agora-h0)/86400000;          // dias do mês já passados (com fração de hoje)
-  const proj = decorrido>0 ? Math.round(v.m/decorrido*diasMes) : v.m;
+  const ext = lerExtras(), fiz = v.m + ext;                            // CRM + externas (só aqui na meta)
+  const proj = (decorrido>0 ? Math.round(v.m/decorrido*diasMes) : v.m) + ext;   // ritmo do CRM + externas já feitas
   const meta = lerMeta();
-  const pct = meta ? Math.min(100, v.m*100/meta) : 0;
-  const faltam = Math.max(0, meta - v.m), diasRest = diasMes - h0.getDate() + 1;
+  const pct = meta ? Math.min(100, fiz*100/meta) : 0;
+  const faltam = Math.max(0, meta - fiz), diasRest = diasMes - h0.getDate() + 1;
   $("#meta").innerHTML = `<div class="meta-corpo">
     <div class="meta-num"><span>A meta é</span>${meta ? `<b class="num">${fmtN(meta)}</b>` : `<button type="button" class="definir" data-abrir-meta>Definir meta</button>`}</div>
-    <div class="meta-num"><span>Fizemos</span><b class="verde num">${fmtN(v.m)}${meta?`<small>${fmtP(v.m*100/meta)}</small>`:""}</b></div>
+    <div class="meta-num"><span>Fizemos</span><b class="verde num">${fmtN(fiz)}${meta?`<small>${fmtP(fiz*100/meta)}</small>`:""}</b>${ext?`<span class="ext">${txtExtras(v.m,ext)}</span>`:""}</div>
     <div class="meta-num"><span>Falta</span><b class="num">${meta ? (faltam ? fmtN(faltam) : `<span class="verde" style="font-size:inherit">Meta batida! ✔</span>`) : "—"}</b></div>
-    <div class="prog" title="${meta?`${fmtP(v.m*100/meta)} da meta`:"Defina a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
+    <div class="prog" title="${meta?`${fmtP(fiz*100/meta)} da meta`:"Defina a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
     <div class="meta-info">Projeção para o fim do mês<b class="num">${fmtN(proj)}</b></div>
     <div class="meta-info">${meta && faltam ? `Por dia até o fim do mês<b class="num">${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>`
                 : `Conversão no mês<b class="laranja num">${fmtConv(v.m,v.l)}</b>`}</div>
@@ -524,17 +534,31 @@ function renderMeta(){
 }
 
 /* ---------- Aba de edição da meta (botão "Meta" ao lado do Excel) ---------- */
+// O campo "Fizemos" mostra o total (CRM + externas). Ao salvar, guarda só a diferença em relação ao CRM
+// (as externas); assim, quando entra uma nova matrícula no CRM, o total da meta sobe junto.
+let crmAoAbrir = null;
+function extrasDigitadas(){
+  if(crmAoAbrir===null) return lerExtras();
+  const tot = parseInt($("#fizInp").value,10);
+  return Number.isFinite(tot) ? Math.max(0, tot - crmAoAbrir) : lerExtras();
+}
 function atualizarPainelMeta(){
   if($("#pmeta").hidden) return;
   const v = feitasNoMes();
-  const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0);
   $("#pmetaTit").textContent = `Meta de ${MESES[new Date().getMonth()]}`;
-  $("#pmetaFiz").textContent = v ? fmtN(v.m) : "…";
-  $("#pmetaFalta").textContent = !v ? "…" : !meta ? "—" : v.m>=meta ? "Meta batida! ✔" : fmtN(meta - v.m);
+  if(v && crmAoAbrir===null){ crmAoAbrir = v.m; $("#fizInp").value = v.m + lerExtras(); }   // histórico chegou com o painel aberto
+  $("#fizInp").disabled = !v; $("#fizInp").min = v ? v.m : 0;
+  const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0);
+  const ext = extrasDigitadas(), fiz = v ? crmAoAbrir + ext : 0;
+  $("#pmetaDet").textContent = v ? txtExtras(crmAoAbrir, ext) : "carregando matrículas do CRM…";
+  $("#pmetaFalta").textContent = !v ? "…" : !meta ? "—" : fiz>=meta ? "Meta batida! ✔" : fmtN(meta - fiz);
 }
 function abrirPainelMeta(){
   $("#pmeta").hidden = false; $("#btnMeta").setAttribute("aria-expanded","true"); $("#btnMeta").classList.add("ativo");
   $("#metaInp").value = lerMeta() || "";
+  const v = feitasNoMes();
+  crmAoAbrir = v ? v.m : null;
+  $("#fizInp").value = v ? v.m + lerExtras() : "";
   atualizarPainelMeta();
   $("#metaInp").focus(); $("#metaInp").select();
 }
@@ -626,9 +650,11 @@ function selecionar(el){
 $("#cards").addEventListener("click", e=>selecionar(e.target.closest("[data-sel]")));
 $("#btnMeta").addEventListener("click", e=>{ e.stopPropagation(); $("#pmeta").hidden ? abrirPainelMeta() : fecharPainelMeta(); });
 $("#metaInp").addEventListener("input", atualizarPainelMeta);          // Falta muda enquanto digita
+$("#fizInp").addEventListener("input", atualizarPainelMeta);
 $("#pmeta").addEventListener("submit", e=>{
   e.preventDefault();
   salvarMeta(Math.max(0, parseInt($("#metaInp").value,10) || 0));
+  if(crmAoAbrir!==null) salvarExtras(extrasDigitadas());
   fecharPainelMeta(); if(S.pronto) renderMeta();
 });
 $("#pmetaFechar").addEventListener("click", fecharPainelMeta);
