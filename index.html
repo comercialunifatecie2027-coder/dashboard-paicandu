@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Comercial Paiçandu</title>
+<style>
+  :root{
+    --bg:#000; --card:#1c1c1e; --card2:#262628; --line:#333336;
+    --txt:#fff; --muted:#a1a1a6;
+    --verde:#2E841D; --azul:#1D4285; --laranja:#fe5e00; --laranja2:#c24800;
+    --barra:#bdbdc2; --btnSel:#0d0d0e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",Roboto,Arial,sans-serif;padding:16px 20px 32px;min-height:100vh}
+  .verde{color:var(--verde)} .azul{color:var(--azul)} .laranja{color:var(--laranja)}
+  .fr{color:var(--laranja2);font-size:.72em;font-weight:700;margin-left:4px;white-space:nowrap}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* Cabeçalho (pequeno, canto superior esquerdo) */
+  header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  header .logo{width:46px;height:46px;object-fit:contain;flex:none}
+  header h1{font-size:20px;font-weight:700;color:var(--laranja);line-height:1.1}
+  .status{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:3px}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none;background:#eab308}
+  .dot.on{background:#3fbf2a;box-shadow:0 0 6px #3fbf2a}
+  .dot.off{background:#ef4444}
+
+  .bloco{background:var(--card);border-radius:12px;padding:16px}
+  h2{font-size:15px;font-weight:600}
+  .sub-h{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}
+
+  /* Cards */
+  .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+  .card{display:flex;flex-direction:column;min-height:132px;border:1.5px solid transparent}
+  .card .tit{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+  .card .tit b{color:var(--txt);font-weight:600}
+  .card .big{font-size:44px;font-weight:700;line-height:1;margin:12px 0 4px}
+  .card .lbl{font-size:11px;color:var(--muted)}
+  .card .rod{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding-top:10px;font-size:13px}
+  .card .rod b{font-size:17px}
+  .card .rod > span:last-child{text-align:right}
+  .card.selec{cursor:pointer;transition:background .15s}
+  .card.selec:hover{background:#232325}
+  .card.sel{border-color:#ff8a3d}
+
+  /* Gráfico */
+  .graf-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .btns{display:flex;gap:6px;flex-wrap:wrap}
+  .btn{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn:hover{border-color:#555}
+  .btn.ativo{background:var(--btnSel);border-color:#444;font-weight:600}
+  .grafico{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;align-items:end}
+  .col{display:flex;flex-direction:column;align-items:center;min-width:0;border:1.5px solid transparent;border-radius:10px;padding:6px 2px}
+  .col.sel{border-color:#ff8a3d}
+  .area{height:190px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+  .valor{font-size:15px;font-weight:700;margin-bottom:5px;text-align:center}
+  .barra{width:min(64px,80%);background:var(--barra);border-radius:6px 6px 0 0;min-height:3px;transition:height .4s}
+  .eixo{width:100%;border-top:1px solid var(--line);text-align:center;padding-top:6px;font-size:12px}
+  .eixo .d{font-weight:600}
+  .eixo .s{color:var(--muted);font-size:11px}
+  .sub{margin-top:6px;font-size:12px;text-align:center;line-height:1.45}
+
+  /* Botão Excel, comparativo, meta do mês e aviso de nova matrícula */
+  header .ferr{margin-left:auto;align-self:flex-start}
+  header .ferr .btn{padding:5px 10px;font-size:12px}
+  .cmp{font-size:11px;color:var(--muted);margin-top:4px}
+  .cmp .up{color:#3fbf2a} .cmp .dn{color:#ef4444}
+  .meta{margin-bottom:14px}
+  .meta-corpo{display:grid;grid-template-columns:minmax(200px,auto) 1fr auto auto;gap:24px;align-items:center;margin-top:12px}
+  .meta-num{display:flex;align-items:baseline;gap:8px}
+  .meta-num b{font-size:40px;line-height:1}
+  .meta-num span{color:var(--muted);font-size:14px}
+  .prog{height:12px;background:var(--card2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .prog>div{height:100%;background:var(--verde);transition:width .4s}
+  .meta-info{font-size:12px;color:var(--muted);white-space:nowrap}
+  .meta-info b{display:block;font-size:18px;color:var(--txt)}
+  .meta-edit{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .meta-edit input{width:80px;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:4px 6px;color:#fff;font:inherit}
+  /* Calendário do mês */
+  .cal{margin-top:14px}
+  .cal-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:12px}
+  .cal-sem{font-size:11px;color:var(--muted);text-align:center;font-weight:600;padding-bottom:2px}
+  .dia{background:var(--card2);border-radius:10px;padding:8px 10px;min-height:92px;display:flex;flex-direction:column;gap:2px;border:1.5px solid transparent}
+  .dia.vazio{background:transparent}
+  .dia.fut{opacity:.4}
+  .dia.hoje{border-color:#6a6a70}
+  .dia .n{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:4px}
+  .dia.hoje .n b{color:var(--txt)}
+  .dia .m{font-size:22px;font-weight:700;line-height:1.1}
+  .dia .l{font-size:12px}
+  .dia .c{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dia .c .fr{font-size:.85em}
+  .dia small{font-size:10.5px;color:var(--muted);font-weight:400}
+  /* Tela de acesso (versão publicada) */
+  .login{position:fixed;inset:0;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
+  .login form{width:min(380px,100%);display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+  .login .logo{width:56px;height:56px;object-fit:contain}
+  .login h1{font-size:18px;color:var(--laranja)}
+  .login label{width:100%;text-align:left;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+  .login input[type=password]{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:10px;color:#fff;font-size:15px}
+  .login .lembrar{flex-direction:row;align-items:center;gap:8px}
+  .login .msg{color:#fca5a5;font-size:13px}
+  .login .btn{width:100%;padding:10px}
+  .toast{position:fixed;right:20px;bottom:20px;background:var(--card);border:1.5px solid var(--verde);border-radius:12px;padding:14px 18px;
+         box-shadow:0 8px 30px rgba(0,0,0,.6);transform:translateY(140%);transition:transform .35s;z-index:20;max-width:340px}
+  .toast.on{transform:none}
+  .toast b{color:#3fbf2a;font-size:16px;display:block}
+  .toast span{font-size:13px;color:#ddd}
+  .aviso{color:var(--muted);font-size:13px;padding:10px 0}
+  .erro{background:#3b0d0d;color:#fecaca;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:none}
+
+  @media (max-width:900px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} .grafico{gap:6px} .valor{font-size:13px}
+    .meta-corpo{grid-template-columns:1fr 1fr;gap:14px} .meta-corpo .prog{grid-column:1/-1;order:-1}
+    .cal-grade{gap:4px} .dia{padding:6px;min-height:78px} .dia .m{font-size:17px} .dia .c .fr,.dia small{display:none} }
+  @media (max-width:560px){ .dia .l,.dia .c{font-size:10.5px} }
+  @media (max-width:560px){ body{padding:12px 12px 24px} .card .big{font-size:34px} .eixo .s{display:none} .sub{font-size:10.5px} }
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="logoU.png" alt="UniFatecie">
+  <div>
+    <h1>Dashboard Comercial Paiçandu</h1>
+    <div class="status"><span id="stDot" class="dot"></span><span id="stTxt">Conectando ao Datacrazy…</span></div>
+  </div>
+  <nav class="btns ferr">
+    <button class="btn" id="btnCsv" title="Baixar leads, matrículas e conversão por dia (último mês) para abrir no Excel">⬇ Excel</button>
+  </nav>
+</header>
+
+<div id="erro" class="erro"></div>
+
+<section class="bloco meta">
+  <div class="graf-top" style="margin-bottom:0">
+    <h2>Meta do mês <span class="sub-h" id="metaSub"></span></h2>
+    <div class="meta-edit"><label for="metaInp">Meta de matrículas:</label><input id="metaInp" type="number" min="0" step="1" placeholder="ex.: 60"></div>
+  </div>
+  <div id="meta"><div class="aviso">Carregando…</div></div>
+</section>
+
+<section class="cards" id="cards"></section>
+
+<section class="bloco">
+  <div class="graf-top">
+    <h2 id="grafTitulo">Matrículas por dia</h2>
+    <div class="btns" id="grafBtns">
+      <button class="btn" data-m="leads">Leads</button>
+      <button class="btn ativo" data-m="mat">Matrículas</button>
+      <button class="btn" data-m="conv">Conversão</button>
+    </div>
+  </div>
+  <div class="grafico" id="grafico"></div>
+</section>
+
+<section class="bloco cal">
+  <h2>Calendário <span class="sub-h" id="calSub"></span></h2>
+  <div class="cal-grade" id="cal"><div class="aviso">Carregando…</div></div>
+</section>
+
+<div class="toast" id="toast"><b id="toastT"></b><span id="toastS"></span></div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO
+   ===================================================================== */
+// Chave do Datacrazy. Na versão publicada (site) ela fica VAZIA: o site pede a chave na primeira vez
+// e guarda só no navegador de quem digitou (nunca vai para o GitHub).
+let API_KEY = "";
+const API = "https://api.g1.datacrazy.io/api/v1";
+const ATUALIZAR_SEG = 30;     // dados de hoje: a cada 30 s
+const HISTORICO_MIN = 10;     // dias anteriores (até 1 mês): recarregados a cada 10 min
+const TAGS_ORIGEM = ["PAIÇANDU"];              // leads: criados com alguma destas tags
+const PIPELINE_MATRICULA = "POLO 22 - PAIÇANDU"; // matrículas: negócios ganhos nesta pipeline
+
+/* =====================================================================
+   UTILITÁRIOS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const norm = s => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[\s\-–—]+/g," ").trim();
+const fmtN = n => n.toLocaleString("pt-BR");
+const fmtP = n => n.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + "%";
+const conv = (m,l) => l>0 ? m*100/l : 0;
+// Fração: 1 matrícula a cada N leads (ex.: 100 matr. / 1000 leads = 1/10)
+function fmtFr(m,l){
+  if(!(l>0)) return "";
+  if(!(m>0)) return ` <span class="fr num" title="nenhuma matrícula em ${fmtN(l)} leads">0/${fmtN(l)}</span>`;
+  const n = (l/m).toLocaleString("pt-BR",{maximumFractionDigits:1});
+  return ` <span class="fr num" title="1 matrícula a cada ${n} leads">1/${n}</span>`;
+}
+const fmtConv = (m,l) => l>0 ? fmtP(conv(m,l)) + fmtFr(m,l) : "—";   // porcentagem primeiro, depois a fração
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const inicioDia = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDias = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const fimDoDia = d => new Date(addDias(d,1).getTime()-1);
+function umMesAntes(d){
+  const ult = new Date(d.getFullYear(), d.getMonth(), 0).getDate();   // último dia do mês anterior
+  return new Date(d.getFullYear(), d.getMonth()-1, Math.min(d.getDate(), ult));
+}
+const chaveDia = d => `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+const ddmm = d => String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");
+const titulo = s => (s||"").trim().toLowerCase().split(/\s+/).map((w,i)=> i>0 && /^(da|de|do|das|dos|e)$/.test(w) ? w : w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+
+/* =====================================================================
+   API (somente leitura; respeita o limite de 60 req/min do Datacrazy)
+   ===================================================================== */
+/* ---------- Acesso (só na versão publicada, sem chave no arquivo) ---------- */
+const CHAVE_KEY = "paicandu_dc_chave";
+const CHAVE_NO_ARQUIVO = !!API_KEY;
+function lerChave(){ try{ return localStorage.getItem(CHAVE_KEY)||""; }catch(_){ return ""; } }
+let pedindo = null;
+function pedirChave(erro){
+  if(pedindo) return pedindo;
+  pedindo = new Promise(ok=>{
+    const f = document.createElement("div");
+    f.className = "login";
+    f.innerHTML = `<form class="bloco"><img class="logo" src="logoU.png" alt="">
+      <h1>Dashboard Comercial Paiçandu</h1>
+      <label>Chave de acesso do Datacrazy<input type="password" autocomplete="off" required></label>
+      ${erro?'<div class="msg">Chave inválida. Confira e tente de novo.</div>':""}
+      <label class="lembrar"><input type="checkbox" checked> Lembrar neste computador</label>
+      <button class="btn ativo" type="submit">Entrar</button></form>`;
+    document.body.appendChild(f);
+    const inp = f.querySelector("input[type=password]"); inp.focus();
+    f.querySelector("form").addEventListener("submit", e=>{
+      e.preventDefault();
+      API_KEY = inp.value.trim();
+      try{ if(f.querySelector("input[type=checkbox]").checked) localStorage.setItem(CHAVE_KEY, API_KEY); else localStorage.removeItem(CHAVE_KEY); }catch(_){}
+      f.remove(); pedindo = null; ok();
+    });
+  });
+  return pedindo;
+}
+if(!API_KEY) API_KEY = lerChave();
+
+async function api(caminho, params={}){
+  const url = `${API}/${caminho}?${new URLSearchParams(params)}`;
+  for(let t=0; t<5; t++){
+    if(!API_KEY) await pedirChave(false);
+    const r = await fetch(url,{headers:{Authorization:"Bearer "+API_KEY}});
+    if((r.status===401 || r.status===403) && !CHAVE_NO_ARQUIVO){
+      try{ localStorage.removeItem(CHAVE_KEY); }catch(_){}
+      API_KEY = ""; await pedirChave(true); continue;
+    }
+    if(r.status===429){ const s=parseInt(r.headers.get("x-ratelimit-reset")||"10",10); await sleep((Math.min(s,60)+1)*1000); continue; }
+    if(!r.ok) throw new Error(`Datacrazy respondeu ${r.status} em /${caminho}`);
+    return r.json();
+  }
+  throw new Error("Limite de requisições do Datacrazy atingido");
+}
+// Paginação por cursor de data (a API devolve do mais novo para o mais antigo)
+async function paginar(caminho, params){
+  const out=[], vistos=new Set(), TAKE=1000;
+  let cursor=null;
+  for(let p=0; p<40; p++){
+    const q = {...params, take:TAKE, skip:0};
+    if(cursor) q["filter[createdAtLessOrEqual]"] = cursor;
+    const d = (await api(caminho,q)).data || [];
+    let novos=0;
+    for(const x of d) if(!vistos.has(x.id)){ vistos.add(x.id); out.push(x); novos++; }
+    if(d.length<TAKE || !novos) break;
+    cursor = d.reduce((m,x)=> x.createdAt<m ? x.createdAt : m, d[0].createdAt);
+  }
+  return out;
+}
+
+/* =====================================================================
+   ESTADO E CARGA
+   ===================================================================== */
+const S = {
+  tagFiltro:"", estagios:"",
+  hist:{ leads:[], mats:[], em:0 },    // de 1 mês atrás até ontem
+  hoje:{ leads:[], mats:[] },
+  metrica:"mat", sel:"hoje", pronto:false,
+};
+
+async function carregarMeta(){
+  // tags de origem
+  const tags = (await api("tags",{take:1000})).data || [];
+  const alvo = new Set(TAGS_ORIGEM.map(norm));
+  const ids = tags.filter(t=>alvo.has(norm(t.name))).map(t=>t.id);
+  if(!ids.length) throw new Error("Tag de origem PAIÇANDU não encontrada no Datacrazy");
+  S.tagFiltro = "some " + ids.join(",");
+  // etapas da pipeline de matrícula
+  const pipes = (await api("pipelines",{take:500})).data || [];
+  const pipe = pipes.find(p=>norm(p.name)===norm(PIPELINE_MATRICULA));
+  if(!pipe) throw new Error(`Pipeline "${PIPELINE_MATRICULA}" não encontrada no Datacrazy`);
+  S.pipeId = pipe.id;
+  const st = (await api(`pipelines/${pipe.id}/stages`,{take:500}).catch(()=>null))?.data;
+  if(st && st.length) S.estagios = st.map(s=>s.id).join(",");
+}
+
+const mapLead = l => { const d=new Date(l.createdAt); return { id:l.id, dia:chaveDia(d), t:d.getTime(), at:(l.attendant?.name||"").trim() }; };
+const mapMat  = b => { const d=new Date(b.statusChangedAt); return { id:b.id, dia:chaveDia(d), t:d.getTime(), at:(b.attendant?.name||"").trim(), nome:(b.lead?.name||"").trim() }; };
+
+async function buscarLeads(ini, fim){
+  const r = await paginar("leads",{
+    "filter[createdAtGreaterOrEqual]":ini.toISOString(),
+    "filter[createdAtLessOrEqual]":fim.toISOString(),
+    "filter[tags]":S.tagFiltro });
+  return r.map(mapLead);
+}
+async function buscarMats(ini, fim){
+  const p = {"filter[status]":"won",
+    "filter[statusChangedAtGreaterOrEqual]":ini.toISOString(),
+    "filter[statusChangedAtLessOrEqual]":fim.toISOString()};
+  if(S.estagios) p["filter[stages]"] = S.estagios;
+  const r = await paginar("businesses",p);
+  // confere a pipeline (garante que só entram negócios da POLO 22 - PAIÇANDU)
+  return r.filter(b=> b.stage?.pipeline ? (b.stage.pipeline.id===S.pipeId || norm(b.stage.pipeline.name)===norm(PIPELINE_MATRICULA)) : !!S.estagios)
+          .map(mapMat);
+}
+
+async function atualizarHoje(){
+  const h0 = inicioDia(new Date()), fim = fimDoDia(h0);
+  const [l,m] = await Promise.all([buscarLeads(h0,fim), buscarMats(h0,fim)]);
+  S.hoje = { leads:l, mats:m, k:chaveDia(h0) };
+}
+let carregandoHist = false;
+async function atualizarHistorico(){
+  if(carregandoHist) return; carregandoHist = true;
+  try{
+    const h0 = inicioDia(new Date());
+    const ini = umMesAntes(h0), fim = new Date(h0.getTime()-1);
+    // leads do mês divididos em faixas de 7 dias buscadas em paralelo (carga inicial mais rápida)
+    const faixas = [];
+    for(let a=ini; a<h0; a=addDias(a,7)){ const b=addDias(a,7); faixas.push([a, b<h0 ? new Date(b.getTime()-1) : fim]); }
+    const [ls,m] = await Promise.all([Promise.all(faixas.map(([a,b])=>buscarLeads(a,b))), buscarMats(ini,fim)]);
+    const vistos = new Set();
+    const l = ls.flat().filter(x=>!vistos.has(x.id) && vistos.add(x.id));
+    S.hist = { leads:l, mats:m, em:Date.now(), k:chaveDia(h0) };
+  } finally { carregandoHist = false; }
+}
+const histVencido = () => !S.hist.em || S.hist.k!==chaveDia(new Date()) || Date.now()-S.hist.em > HISTORICO_MIN*60000;
+
+/* =====================================================================
+   AGREGAÇÃO
+   ===================================================================== */
+// Leads e matrículas de um conjunto de dias
+function dados(dias){
+  const ks = new Set(dias.map(chaveDia)), hk = chaveDia(new Date());
+  const pega = arr => arr.filter(x=>ks.has(x.dia));
+  // dias anteriores ainda não carregados (só na primeira carga): mostra "…"
+  const carregando = (!S.hist.em || S.hist.k!==hk) && [...ks].some(k=>k!==hk);   // (também na virada do dia)
+  const leads = [...(ks.has(hk)?S.hoje.leads:[]), ...pega(S.hist.leads)];
+  const mats  = [...(ks.has(hk)?S.hoje.mats:[]),  ...pega(S.hist.mats)];
+  return { leads, mats, l:leads.length, m:mats.length, carregando };
+}
+const intervalo = (ini, fim) => { const a=[]; for(let d=ini; d<=fim; d=addDias(d,1)) a.push(d); return a; };
+// Dias de cada card (Ontem = só ontem; 7 dias / 1 mês = de lá até hoje)
+function diasDoCard(k){
+  const h0 = inicioDia(new Date());
+  if(k==="ontem") return [addDias(h0,-1)];
+  if(k==="7d")    return intervalo(addDias(h0,-7), h0);
+  if(k==="mes")   return intervalo(umMesAntes(h0), h0);
+  return [h0];
+}
+
+/* =====================================================================
+   RENDERIZAÇÃO
+   ===================================================================== */
+function renderCards(){
+  const h0 = inicioDia(new Date()), ontem = addDias(h0,-1), d7 = addDias(h0,-7), dm = umMesAntes(h0);
+  const defs = [
+    ["hoje",  "Hoje",         `${DIAS[h0.getDay()]} ${ddmm(h0)}`, true],
+    ["ontem", "Ontem",        `${DIAS[ontem.getDay()]} ${ddmm(ontem)}`, true],
+    ["7d",    "7 dias atrás", `${ddmm(d7)} até hoje`, true],
+    ["mes",   "1 mês atrás",  `${ddmm(dm)} até hoje`, false],
+  ];
+  $("#cards").innerHTML = defs.map(([k,t,sub,selec])=>{
+    const v = dados(diasDoCard(k));
+    const attrs = selec ? ` data-sel="${k}" role="button" tabindex="0" aria-pressed="${S.sel===k}" title="Clique para indicar este dia no gráfico"` : "";
+    return `<div class="bloco card ${selec?"selec":""} ${S.sel===k?"sel":""}"${attrs}>
+      <div class="tit"><b>${t}</b><span>${sub}</span></div>
+      <div class="big verde num">${v.carregando?"…":fmtN(v.m)}</div>
+      <div class="lbl">matrículas</div>
+      ${k==="hoje" ? comparativo() : ""}
+      <div class="rod">
+        <span><b class="azul num">${v.carregando?"…":fmtN(v.l)}</b> <span class="lbl">leads</span></span>
+        <span><b class="laranja num">${v.carregando?"…":fmtConv(v.m,v.l)}</b> <span class="lbl">conversão</span></span>
+      </div></div>`;
+  }).join("");
+}
+
+function renderGrafico(){
+  const h0 = inicioDia(new Date());
+  const dias = intervalo(addDias(h0,-6), h0);
+  const vals = dias.map(d=>{ const v=dados([d]); return {...v, c:conv(v.m,v.l)}; });
+  const met = S.metrica;
+  const campo = met==="leads"?"l":met==="mat"?"m":"c";
+  const cor = met==="leads"?"azul":met==="mat"?"verde":"laranja";
+  $("#grafTitulo").textContent = met==="leads"?"Leads por dia":met==="mat"?"Matrículas por dia":"Conversão por dia";
+  const max = Math.max(...vals.map(v=>v[campo]), met==="conv"?0.1:1);
+  const L = v=>`<div><span class="azul num">${fmtN(v.l)}</span> leads</div>`;
+  const M = v=>`<div><span class="verde num">${fmtN(v.m)}</span> matr.</div>`;
+  const C = v=>`<div><span class="laranja num">${v.l?fmtP(v.c):"—"}</span> conv.${v.l?"<br>"+fmtFr(v.m,v.l):""}</div>`;
+  // contorno: Hoje → só hoje; Ontem → só ontem; 7 dias atrás → todos os dias do gráfico
+  const marcar = i => S.sel==="7d" ? true : i===(S.sel==="ontem" ? 5 : 6);
+  $("#grafico").innerHTML = dias.map((d,i)=>{
+    const v = vals[i];
+    const rot = i===6?"Hoje":i===5?"Ontem":DIAS[d.getDay()];
+    const valor = v.carregando ? "…" : met==="conv" ? fmtConv(v.m,v.l) : fmtN(v[campo]);
+    const sub = v.carregando ? `<div style="color:var(--muted)">carregando…</div>`
+              : met==="leads" ? M(v)+C(v) : met==="mat" ? L(v)+C(v) : L(v)+M(v);
+    return `<div class="col ${marcar(i)?"sel":""}">
+      <div class="area"><div class="valor ${cor} num">${valor}</div>
+        <div class="barra" style="height:${(v[campo]/max*150).toFixed(1)}px"></div></div>
+      <div class="eixo"><div class="d">${rot}</div><div class="s">${i>=5?DIAS[d.getDay()]+" ":""}${ddmm(d)}</div></div>
+      <div class="sub">${sub}</div></div>`;
+  }).join("");
+}
+
+// Hoje × ontem até este mesmo horário
+function comparativo(){
+  if(!S.hist.em || S.hist.k!==chaveDia(new Date())) return `<div class="cmp">comparando com ontem…</div>`;
+  const lim = Date.now() - 86400000, ok = chaveDia(addDias(inicioDia(new Date()),-1));
+  const l0 = S.hist.leads.filter(x=>x.dia===ok && x.t<=lim).length;
+  const m0 = S.hist.mats.filter(x=>x.dia===ok && x.t<=lim).length;
+  const d = (a,b) => { const x=a-b; return x>0?`<span class="up">▲ ${fmtN(x)}</span>`:x<0?`<span class="dn">▼ ${fmtN(-x)}</span>`:`=`; };
+  const h = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  return `<div class="cmp" title="Ontem até ${h}: ${fmtN(l0)} leads e ${fmtN(m0)} matrículas">vs ontem até ${h}: ${d(S.hoje.mats.length,m0)} matr. · ${d(S.hoje.leads.length,l0)} leads</div>`;
+}
+
+// Meta do mês (guardada só neste computador) e projeção pelo ritmo atual
+const META_KEY = "paicandu_meta_mes";
+const lerMeta = () => { try{ return parseInt(localStorage.getItem(META_KEY)||"",10) || 0; }catch(_){ return 0; } };
+function renderMeta(){
+  const agora = new Date(), h0 = inicioDia(agora);
+  const ini = new Date(h0.getFullYear(), h0.getMonth(), 1);
+  const diasMes = new Date(h0.getFullYear(), h0.getMonth()+1, 0).getDate();
+  const mes = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][h0.getMonth()];
+  $("#metaSub").textContent = `${mes} · dia ${h0.getDate()} de ${diasMes}`;
+  const v = dados(intervalo(ini, h0));
+  if(v.carregando){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
+  const decorrido = (h0.getDate()-1) + (agora-h0)/86400000;          // dias do mês já passados (com fração de hoje)
+  const proj = decorrido>0 ? Math.round(v.m/decorrido*diasMes) : v.m;
+  const meta = lerMeta();
+  const pct = meta ? Math.min(100, v.m*100/meta) : 0;
+  const faltam = Math.max(0, meta - v.m), diasRest = diasMes - h0.getDate() + 1;
+  $("#meta").innerHTML = `<div class="meta-corpo">
+    <div class="meta-num"><b class="verde num">${fmtN(v.m)}</b><span>${meta?`de ${fmtN(meta)} matrículas (${fmtP(v.m*100/meta)})`:"matrículas no mês"}</span></div>
+    <div class="prog" title="${meta?"":"Digite a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
+    <div class="meta-info">Projeção para o fim do mês<b class="num">${fmtN(proj)}</b></div>
+    <div class="meta-info">${meta ? (faltam ? `Faltam · por dia até o fim<b class="num">${fmtN(faltam)} · ${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>` : `Meta batida!<b class="verde">✔</b>`)
+                : `Conversão no mês<b class="laranja num">${fmtConv(v.m,v.l)}</b>`}</div>
+  </div>`;
+}
+
+// Calendário do mês vigente: matrículas, leads e conversão de cada dia
+function renderCalendario(){
+  const h0 = inicioDia(new Date());
+  const ini = new Date(h0.getFullYear(), h0.getMonth(), 1);
+  const diasMes = new Date(h0.getFullYear(), h0.getMonth()+1, 0).getDate();
+  const mes = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][h0.getMonth()];
+  $("#calSub").textContent = `${mes} de ${h0.getFullYear()}`;
+  let html = DIAS.map(d=>`<div class="cal-sem">${d}</div>`).join("");
+  html += `<div class="dia vazio"></div>`.repeat(ini.getDay());          // espaços antes do dia 1
+  for(let n=1; n<=diasMes; n++){
+    const d = new Date(h0.getFullYear(), h0.getMonth(), n);
+    const hoje = n===h0.getDate(), fut = d>h0;
+    const cab = `<div class="n"><b>${n}</b>${hoje?"<span>hoje</span>":""}</div>`;
+    if(fut){ html += `<div class="dia fut">${cab}</div>`; continue; }
+    const v = dados([d]);
+    if(v.carregando){ html += `<div class="dia">${cab}<div class="m">…</div></div>`; continue; }
+    html += `<div class="dia ${hoje?"hoje":""}" title="${ddmm(d)}: ${fmtN(v.m)} matrículas · ${fmtN(v.l)} leads · conversão ${v.l?fmtP(conv(v.m,v.l)):"—"}">${cab}
+      <div class="m verde num">${fmtN(v.m)} <small>matr.</small></div>
+      <div class="l"><span class="azul num">${fmtN(v.l)}</span> <small>leads</small></div>
+      <div class="c laranja num">${fmtConv(v.m,v.l)}</div></div>`;
+  }
+  $("#cal").innerHTML = html;
+}
+
+// Aviso de nova matrícula (a partir da 2ª atualização, para não avisar as que já existiam)
+let matsConhecidas = null, toastTimer = null;
+function verificarNovas(){
+  if(matsConhecidas){
+    const novas = S.hoje.mats.filter(m=>!matsConhecidas.has(m.id));
+    if(novas.length){
+      $("#toastT").textContent = novas.length>1 ? `🎉 ${novas.length} novas matrículas!` : "🎉 Nova matrícula!";
+      $("#toastS").textContent = novas.map(m=>[titulo(m.nome), m.at && "por "+titulo(m.at)].filter(Boolean).join(" ")).join(" · ");
+      $("#toast").classList.add("on");
+      clearTimeout(toastTimer); toastTimer = setTimeout(()=>$("#toast").classList.remove("on"), 10000);
+    }
+  }
+  matsConhecidas = new Set(S.hoje.mats.map(m=>m.id));
+}
+
+// Exportar para Excel (CSV com ; e acentos)
+function exportarCsv(){
+  if(!S.hist.em){ alert("Aguarde o histórico terminar de carregar."); return; }
+  const h0 = inicioDia(new Date());
+  const linhas = [["Data","Dia da semana","Leads","Matrículas","Conversão (%)","Fração"]];
+  for(const d of intervalo(umMesAntes(h0), h0).reverse()){
+    const v = dados([d]);
+    linhas.push([d.toLocaleDateString("pt-BR"), DIAS[d.getDay()], v.l, v.m,
+      v.l ? conv(v.m,v.l).toLocaleString("pt-BR",{maximumFractionDigits:1}) : "",
+      v.l ? (v.m ? "1/"+(v.l/v.m).toLocaleString("pt-BR",{maximumFractionDigits:1}) : "0/"+v.l) : ""]);
+  }
+  const csv = "﻿" + linhas.map(r=>r.join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download = `paicandu_${h0.toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+
+function render(){
+  if(!S.pronto) return;
+  renderCards(); renderGrafico(); renderMeta(); renderCalendario();
+}
+function status(ok, txt){
+  $("#stDot").className = "dot " + (ok===true?"on":ok===false?"off":"");
+  $("#stTxt").textContent = txt;
+}
+const hora = () => new Date().toLocaleTimeString("pt-BR");
+
+/* =====================================================================
+   EVENTOS
+   ===================================================================== */
+$("#grafBtns").addEventListener("click", e=>{
+  const b = e.target.closest("[data-m]"); if(!b) return;
+  S.metrica = b.dataset.m;
+  document.querySelectorAll("#grafBtns .btn").forEach(x=>x.classList.toggle("ativo", x===b));
+  render();
+});
+function selecionar(el){
+  if(!el) return;
+  S.sel = el.dataset.sel; render();
+}
+$("#cards").addEventListener("click", e=>selecionar(e.target.closest("[data-sel]")));
+$("#metaInp").value = lerMeta() || "";
+$("#metaInp").addEventListener("input", e=>{
+  try{ localStorage.setItem(META_KEY, String(Math.max(0, parseInt(e.target.value,10)||0))); }catch(_){}
+  if(S.pronto) renderMeta();
+});
+$("#btnCsv").addEventListener("click", exportarCsv);
+$("#cards").addEventListener("keydown", e=>{
+  if(e.key==="Enter" || e.key===" "){ e.preventDefault(); selecionar(e.target.closest("[data-sel]")); }
+});
+
+/* =====================================================================
+   CICLO DE ATUALIZAÇÃO (a cada 30 s)
+   ===================================================================== */
+let rodando = false;
+async function ciclo(){
+  if(rodando) return; rodando = true;
+  try{
+    if(!S.tagFiltro) await carregarMeta();
+    // histórico (até 1 mês) em segundo plano: não atrasa os dados de hoje
+    if(histVencido() && !carregandoHist)
+      atualizarHistorico().then(render).catch(e=>console.error("Histórico:", e));
+    await atualizarHoje();
+    verificarNovas();
+    S.pronto = true;
+    $("#erro").style.display = "none";
+    status(true, `Conectado ao Datacrazy · última atualização ${hora()}`);
+    render();
+  }catch(e){
+    console.error(e);
+    status(false, `Sem conexão com o Datacrazy · última tentativa ${hora()}`);
+    const msg = e instanceof TypeError ? "Não foi possível acessar o Datacrazy (verifique a internet)." : e.message;
+    $("#erro").textContent = msg + " Nova tentativa em " + ATUALIZAR_SEG + " segundos.";
+    $("#erro").style.display = "block";
+  }finally{ rodando = false; }
+}
+ciclo();
+setInterval(ciclo, ATUALIZAR_SEG*1000);
+</script>
+</body>
+</html>
