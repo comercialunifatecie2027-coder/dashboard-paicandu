@@ -64,6 +64,9 @@
   /* Botão Excel, comparativo, meta do mês e aviso de nova matrícula */
   header .ferr{margin-left:auto;align-self:flex-start}
   header .ferr .btn{padding:5px 10px;font-size:12px}
+  header .ferr .icone{display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;text-decoration:none}
+  header .ferr .icone img{width:20px;height:20px;object-fit:contain;display:block;border-radius:4px}
+  header .ferr .icone b{font-size:11px;color:var(--laranja)}
   .cmp{font-size:11px;color:var(--muted);margin-top:4px}
   .cmp .up{color:#3fbf2a} .cmp .dn{color:#ef4444}
   .meta{margin-bottom:14px}
@@ -142,6 +145,9 @@
   <nav class="btns ferr">
     <button class="btn" id="btnCsv" title="Baixar leads, matrículas e conversão por dia (último mês) para abrir no Excel">⬇ Excel</button>
     <button class="btn" id="btnMeta" aria-expanded="false" aria-controls="pmeta" title="Editar a meta do mês">🎯 Meta</button>
+    <a class="btn icone" id="btnDc" href="https://crm.datacrazy.io/login" target="_blank" rel="noopener noreferrer" title="Abrir o Datacrazy em uma nova aba" aria-label="Abrir o Datacrazy em uma nova aba">
+      <img src="https://crm.datacrazy.io/icon.ico" alt="" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'DC'}))">
+    </a>
   </nav>
   <form class="pmeta" id="pmeta" hidden>
     <h3 id="pmetaTit">Meta do mês</h3>
