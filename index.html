@@ -74,6 +74,7 @@
   .meta-num{display:flex;flex-direction:column;gap:2px}
   .meta-num span{color:var(--muted);font-size:12px}
   .meta-num b{font-size:36px;line-height:1}
+  .meta-num b .verde{color:var(--verde)}
   .meta-num small{font-size:12px;color:var(--muted);font-weight:400;margin-left:4px}
   .meta-num .definir{background:none;border:1px dashed #555;color:var(--muted);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
   .meta-num .definir:hover{color:#fff;border-color:#888}
@@ -86,6 +87,9 @@
   .pmeta .lin span{color:var(--muted)}
   .pmeta .lin b{font-size:20px}
   .pmeta input{width:110px;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:#fff;font:inherit;font-size:18px;font-weight:700;text-align:right}
+  .pmeta .periodo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pmeta .periodo label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+  .pmeta .periodo input{width:100%;font-size:14px;font-weight:600;text-align:left;color-scheme:dark;padding:6px}
   .pmeta .acoes{display:flex;gap:8px}
   .pmeta .acoes .btn{flex:1;padding:8px}
   .pmeta .nota{font-size:11px;color:var(--muted)}
@@ -151,27 +155,31 @@
   </div>
   <nav class="btns ferr">
     <button class="btn" id="btnCsv" title="Baixar leads, matrículas e conversão por dia (último mês) para abrir no Excel">⬇ Excel</button>
-    <button class="btn" id="btnMeta" aria-expanded="false" aria-controls="pmeta" title="Editar a meta do mês">🎯 Meta</button>
+    <button class="btn" id="btnMeta" aria-expanded="false" aria-controls="pmeta" title="Editar a meta e o período">🎯 Meta</button>
     <a class="btn icone" id="btnDc" href="https://crm.datacrazy.io/login" target="_blank" rel="noopener noreferrer" title="Abrir o Datacrazy em uma nova aba" aria-label="Abrir o Datacrazy em uma nova aba">
       <img src="https://crm.datacrazy.io/icon.ico" alt="" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'DC'}))">
     </a>
   </nav>
   <form class="pmeta" id="pmeta" hidden>
-    <h3 id="pmetaTit">Meta do mês</h3>
+    <h3 id="pmetaTit">Meta</h3>
+    <div class="periodo">
+      <label><span>Início</span><input id="iniInp" type="date" required></label>
+      <label><span>Fim</span><input id="fimInp" type="date" required></label>
+    </div>
     <label class="lin"><span>A meta é</span><input id="metaInp" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
     <label class="lin"><span>Fizemos</span><input id="fizInp" class="fiz" type="number" min="0" step="1" inputmode="numeric" title="Total de matrículas do mês. Some aqui as matrículas feitas fora do CRM."></label>
     <div class="det" id="pmetaDet">…</div>
     <div class="lin"><span>Falta</span><b class="num" id="pmetaFalta">…</b></div>
     <div class="acoes"><button type="submit" class="btn ativo">Salvar</button><button type="button" class="btn" id="pmetaFechar">Fechar</button></div>
     <div class="nota" id="pmetaSt"></div>
-    <div class="nota">Para somar matrículas feitas fora do CRM, aumente o número em "Fizemos". Elas contam só na meta do mês; as novas matrículas do CRM continuam sendo somadas. A meta e as matrículas externas são <b>compartilhadas</b>: aparecem iguais em todos os computadores e TVs, e valem só para este mês.</div>
+    <div class="nota">Escolha o início e o fim do período da meta. Para somar matrículas feitas fora do CRM, aumente o número em "Fizemos": elas contam só na meta, e as novas matrículas do CRM no período continuam sendo somadas. A meta, o período e as matrículas externas são <b>compartilhados</b>: aparecem iguais em todos os computadores e TVs.</div>
   </form>
 </header>
 
 <div id="erro" class="erro"></div>
 
 <section class="bloco meta">
-  <h2>Meta do mês <span class="sub-h" id="metaSub"></span></h2>
+  <h2><span id="metaTit">Meta</span> <span class="sub-h" id="metaSub"></span></h2>
   <div id="meta"><div class="aviso">Carregando…</div></div>
 </section>
 
@@ -495,24 +503,24 @@ function comparativo(){
   return `<div class="cmp" title="Ontem até ${h}: ${fmtN(l0)} leads e ${fmtN(m0)} matrículas">vs ontem até ${h}: ${d(S.hoje.mats.length,m0)} matr. · ${d(S.hoje.leads.length,l0)} leads</div>`;
 }
 
-// Meta do mês e matrículas externas COMPARTILHADAS entre todos os computadores (Supabase).
-// Só quem tem acesso ao dashboard consegue ler/salvar: o navegador envia apenas uma impressão digital
-// (sha256) da chave do Datacrazy, nunca a chave. Cópia local serve de reserva se o Supabase cair.
+// Meta com PERÍODO EDITÁVEL (início e fim) e matrículas externas, COMPARTILHADAS entre todos os computadores
+// (Supabase). Só quem tem acesso ao dashboard consegue ler/salvar: o navegador envia apenas uma impressão
+// digital (sha256) da chave do Datacrazy, nunca a chave. Cópia local serve de reserva se o Supabase cair.
 const SUPA_URL = "https://pznbdmppsmllabnmaitq.supabase.co/rest/v1/rpc/";
 const SUPA_KEY = "sb_publishable_NfLCHY7tnIIqLYW6gOa5nw_C9H8Btuy";      // chave pública do Supabase (pode ficar no site)
-const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-const mesAtual = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; };
-const metaKey = () => `paicandu_meta_${mesAtual()}`;
-const extraKey = () => `paicandu_externas_${mesAtual()}`;
-const lerLocal = k => { try{ return Math.max(0, parseInt(localStorage.getItem(k)||"",10) || 0); }catch(_){ return 0; } };
-const gravarLocal = (k,n) => { try{ n>0 ? localStorage.setItem(k, String(n)) : localStorage.removeItem(k); }catch(_){} };
-try{ const antiga = localStorage.getItem("paicandu_meta_mes");        // meta da versão anterior (campo único)
-  if(antiga){ if(!localStorage.getItem(metaKey())) localStorage.setItem(metaKey(), antiga); localStorage.removeItem("paicandu_meta_mes"); } }catch(_){}
-// valores do mês vindos do Supabase: {mes, meta, externas, em}
-let metaComp = null, metaErro = null;
-const daNuvem = () => metaComp && metaComp.mes===mesAtual();
-const lerMeta   = () => daNuvem() ? metaComp.meta     : lerLocal(metaKey());
-const lerExtras = () => daNuvem() ? metaComp.externas : lerLocal(extraKey());
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const deIso = s => { const [y,m,d] = String(s||"").split("-").map(Number); return y&&m&&d ? new Date(y,m-1,d) : null; };
+const diasEntre = (a,b) => Math.round((inicioDia(b)-inicioDia(a))/86400000);       // b - a, em dias
+function periodoPadrao(){ const h=new Date(); return { ini:iso(new Date(h.getFullYear(),h.getMonth(),1)), fim:iso(new Date(h.getFullYear(),h.getMonth()+1,0)), meta:0, externas:0 }; }
+const LOCAL_KEY = "paicandu_periodo";
+function lerLocal(){ try{ const o=JSON.parse(localStorage.getItem(LOCAL_KEY)||"null"); if(o && deIso(o.ini) && deIso(o.fim)) return o; }catch(_){}
+  return periodoPadrao(); }
+const gravarLocal = o => { try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(o)); }catch(_){} };
+let metaComp = null, metaErro = null;                    // {ini, fim, meta, externas, em} vindo do Supabase
+const periodo = () => metaComp || lerLocal();
+const lerMeta   = () => periodo().meta|0;
+const lerExtras = () => periodo().externas|0;
+const rotPeriodo = (ini,fim) => `${ddmm(deIso(ini))} a ${ddmm(deIso(fim))}`;
 
 let acessoH = null;
 async function hashAcesso(){
@@ -524,89 +532,111 @@ async function hashAcesso(){
 async function rpcMeta(fn, corpo){
   const r = await fetch(SUPA_URL+fn, { method:"POST",
     headers:{ apikey:SUPA_KEY, Authorization:"Bearer "+SUPA_KEY, "Content-Type":"application/json" },
-    body: JSON.stringify({ p_h: await hashAcesso(), p_mes: mesAtual(), ...corpo }) });
+    body: JSON.stringify({ p_h: await hashAcesso(), ...corpo }) });
   if(!r.ok) throw new Error(r.status===401 ? "acesso negado à meta compartilhada" : `Supabase respondeu ${r.status}`);
   return r.json();
 }
-const guardar = d => { metaComp = { mes:d.mes, meta:d.meta|0, externas:d.externas|0, em:d.atualizado_em };
-  gravarLocal(metaKey(), metaComp.meta); gravarLocal(extraKey(), metaComp.externas); metaErro = null; };
-// Lê a meta compartilhada (a cada atualização de 30 s). Na 1ª vez, se o servidor ainda não tem o mês
-// e este computador tem valores salvos localmente, envia esses valores (migração).
+const guardar = d => { metaComp = { ini:d.ini, fim:d.fim, meta:d.meta|0, externas:d.externas|0, em:d.atualizado_em };
+  gravarLocal(metaComp); metaErro = null; };
+// Lê a meta compartilhada (a cada atualização de 30 s)
 async function carregarMetaComp(){
   if(!API_KEY) return;
   try{
-    const d = await rpcMeta("paicandu_meta_ler", {});
-    const lm = lerLocal(metaKey()), le = lerLocal(extraKey());
-    if(!d.existe && (lm || le)) guardar(await rpcMeta("paicandu_meta_salvar", {p_meta:lm, p_externas:le}));
-    else guardar(d);
+    const d = await rpcMeta("paicandu_periodo_ler", {});
+    if(d.existe) guardar(d); else { metaComp = null; metaErro = null; }
   }catch(e){ metaErro = e.message; console.error("Meta compartilhada:", e); }
 }
-async function salvarMetaComp(meta, externas){
-  gravarLocal(metaKey(), meta); gravarLocal(extraKey(), externas);   // reserva local
-  guardar(await rpcMeta("paicandu_meta_salvar", {p_meta:meta, p_externas:externas}));
+async function salvarMetaComp(o){
+  gravarLocal(o);                                                     // reserva local
+  guardar(await rpcMeta("paicandu_periodo_salvar", {p_ini:o.ini, p_fim:o.fim, p_meta:o.meta, p_externas:o.externas}));
 }
-// Matrículas do CRM no mês vigente (null enquanto o histórico carrega)
-function feitasNoMes(){
-  const h0 = inicioDia(new Date());
-  const v = dados(intervalo(new Date(h0.getFullYear(), h0.getMonth(), 1), h0));
-  return v.carregando ? null : v;
+
+// Matrículas do CRM no período: dias anteriores a hoje buscados no Datacrazy (cache de 10 min) + as de hoje
+const perCache = new Map();                              // "ini|fim|hoje" -> {n, em} (só dias antes de hoje)
+async function carregarCrmPeriodo(ini, fim){
+  const k = `${ini}|${fim}|${iso(new Date())}`, c = perCache.get(k);
+  if(c && Date.now()-c.em < HISTORICO_MIN*60000) return;
+  const h0 = inicioDia(new Date()), a = deIso(ini), b = deIso(fim);
+  let n = 0;
+  if(a < h0){
+    const ate = new Date(Math.min(fimDoDia(b).getTime(), h0.getTime()-1));
+    n = (await buscarMats(a, ate)).length;
+  }
+  perCache.set(k, {n, em:Date.now()});
 }
+function crmPeriodo(ini, fim){
+  const h = iso(new Date()), c = perCache.get(`${ini}|${fim}|${h}`);
+  if(!c) return null;                                    // ainda carregando
+  return c.n + (h>=ini && h<=fim ? S.hoje.mats.length : 0);
+}
+
 const txtExtras = (crm, ext) => `${fmtN(crm)} do CRM + ${fmtN(ext)} ${ext===1?"externa":"externas"}`;
 function renderMeta(){
-  const agora = new Date(), h0 = inicioDia(agora);
-  const ini = new Date(h0.getFullYear(), h0.getMonth(), 1);
-  const diasMes = new Date(h0.getFullYear(), h0.getMonth()+1, 0).getDate();
-  $("#metaSub").innerHTML = `${MESES[h0.getMonth()]} · dia ${h0.getDate()} de ${diasMes}` +
-    (daNuvem() ? `<span class="meta-sync" title="A meta é a mesma em todos os computadores">· compartilhada</span>`
+  const agora = new Date(), h0 = inicioDia(agora), P = periodo();
+  const a = deIso(P.ini), b = deIso(P.fim), total = diasEntre(a,b)+1;
+  const antes = h0 < a, depois = h0 > b;
+  $("#metaTit").textContent = `Meta ${rotPeriodo(P.ini,P.fim)}`;
+  $("#metaSub").innerHTML = (antes ? `começa em ${ddmm(a)}` : depois ? "período encerrado" : `dia ${diasEntre(a,h0)+1} de ${total}`) +
+    (metaComp ? `<span class="meta-sync" title="A meta é a mesma em todos os computadores">· compartilhada</span>`
      : metaErro ? `<span class="meta-sync off" title="${esc(metaErro)}">· sem conexão com a meta compartilhada (mostrando a cópia deste computador)</span>` : "");
   atualizarPainelMeta();
-  const v = feitasNoMes();
-  if(!v){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
-  const decorrido = (h0.getDate()-1) + (agora-h0)/86400000;          // dias do mês já passados (com fração de hoje)
-  const ext = lerExtras(), fiz = v.m + ext;                            // CRM + externas (só aqui na meta)
-  const proj = (decorrido>0 ? Math.round(v.m/decorrido*diasMes) : v.m) + ext;   // ritmo do CRM + externas já feitas
+  const crm = crmPeriodo(P.ini, P.fim);
+  if(crm===null){ $("#meta").innerHTML = `<div class="aviso">Carregando…</div>`; return; }
+  const ext = lerExtras(), fiz = crm + ext;                           // CRM + externas (só aqui na meta)
+  const decorrido = antes ? 0 : depois ? total : diasEntre(a,h0) + (agora-h0)/86400000;   // dias do período já passados
+  const proj = antes ? null : depois ? fiz : (decorrido>0 ? Math.round(crm/decorrido*total) : crm) + ext;
   const meta = lerMeta();
   const pct = meta ? Math.min(100, fiz*100/meta) : 0;
-  const faltam = Math.max(0, meta - fiz), diasRest = diasMes - h0.getDate() + 1;
+  const faltam = Math.max(0, meta - fiz), diasRest = antes ? total : depois ? 0 : diasEntre(h0,b)+1;
   $("#meta").innerHTML = `<div class="meta-corpo">
     <div class="meta-num"><span>A meta é</span>${meta ? `<b class="num">${fmtN(meta)}</b>` : `<button type="button" class="definir" data-abrir-meta>Definir meta</button>`}</div>
-    <div class="meta-num"><span>Fizemos</span><b class="verde num">${fmtN(fiz)}${meta?`<small>${fmtP(fiz*100/meta)}</small>`:""}</b>${ext?`<span class="ext">${txtExtras(v.m,ext)}</span>`:""}</div>
+    <div class="meta-num"><span>Fizemos</span><b class="verde num">${fmtN(fiz)}${meta?`<small>${fmtP(fiz*100/meta)}</small>`:""}</b>${ext?`<span class="ext">${txtExtras(crm,ext)}</span>`:""}</div>
     <div class="meta-num"><span>Falta</span><b class="num">${meta ? (faltam ? fmtN(faltam) : `<span class="verde" style="font-size:inherit">Meta batida! ✔</span>`) : "—"}</b></div>
     <div class="prog" title="${meta?`${fmtP(fiz*100/meta)} da meta`:"Defina a meta para ver o progresso"}"><div style="width:${meta?pct.toFixed(1):0}%"></div></div>
-    <div class="meta-info">Projeção para o fim do mês<b class="num">${fmtN(proj)}</b></div>
-    <div class="meta-info">${meta && faltam ? `Por dia até o fim do mês<b class="num">${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>`
-                : `Conversão no mês<b class="laranja num">${fmtConv(v.m,v.l)}</b>`}</div>
+    <div class="meta-info">${depois?"Resultado do período":"Projeção para o fim do período"}<b class="num">${proj===null?"—":fmtN(proj)}</b></div>
+    <div class="meta-info">${meta && faltam && diasRest ? `Por dia até ${ddmm(b)}<b class="num">${(faltam/diasRest).toLocaleString("pt-BR",{maximumFractionDigits:1})}</b>`
+                : `Dias restantes<b class="num">${fmtN(diasRest)}</b>`}</div>
   </div>`;
 }
 
 /* ---------- Aba de edição da meta (botão "Meta" ao lado do Excel) ---------- */
-// O campo "Fizemos" mostra o total (CRM + externas). Ao salvar, guarda só a diferença em relação ao CRM
-// (as externas); assim, quando entra uma nova matrícula no CRM, o total da meta sobe junto.
-let crmAoAbrir = null;
-function extrasDigitadas(){
-  if(crmAoAbrir===null) return lerExtras();
-  const tot = parseInt($("#fizInp").value,10);
-  return Number.isFinite(tot) ? Math.max(0, tot - crmAoAbrir) : lerExtras();
+// O campo "Fizemos" mostra o total (CRM + externas) do período. Ao salvar, guarda só a diferença em relação
+// ao CRM (as externas); assim, quando entra uma nova matrícula no CRM, o total da meta sobe junto.
+// Ao trocar as datas, o CRM do novo período é recontado e as externas continuam as mesmas.
+const PM = { crm:null, ext:0 };
+function datasPainel(){
+  const ini = $("#iniInp").value, fim = $("#fimInp").value, a = deIso(ini), b = deIso(fim);
+  return { ini, fim, ok: !!(a && b && fim>=ini && diasEntre(a,b)<=366) };
 }
 function atualizarPainelMeta(){
   if($("#pmeta").hidden) return;
-  const v = feitasNoMes();
-  $("#pmetaTit").textContent = `Meta de ${MESES[new Date().getMonth()]}`;
-  if(v && crmAoAbrir===null){ crmAoAbrir = v.m; $("#fizInp").value = v.m + lerExtras(); }   // histórico chegou com o painel aberto
-  $("#fizInp").disabled = !v; $("#fizInp").min = v ? v.m : 0;
-  const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0);
-  const ext = extrasDigitadas(), fiz = v ? crmAoAbrir + ext : 0;
-  $("#pmetaDet").textContent = v ? txtExtras(crmAoAbrir, ext) : "carregando matrículas do CRM…";
-  $("#pmetaFalta").textContent = !v ? "…" : !meta ? "—" : fiz>=meta ? "Meta batida! ✔" : fmtN(meta - fiz);
+  const d = datasPainel();
+  $("#pmetaTit").textContent = d.ok ? `Meta ${rotPeriodo(d.ini,d.fim)}` : "Meta";
+  if(d.ok && PM.crm===null){ const c = crmPeriodo(d.ini,d.fim); if(c!==null){ PM.crm = c; $("#fizInp").value = c + PM.ext; } }
+  $("#fizInp").disabled = PM.crm===null; $("#fizInp").min = PM.crm ?? 0;
+  const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0), fiz = (PM.crm ?? 0) + PM.ext;
+  $("#pmetaDet").textContent = !d.ok ? "Período inválido: o fim deve ser igual ou depois do início (até 1 ano)."
+                             : PM.crm===null ? "contando matrículas do CRM no período…" : txtExtras(PM.crm, PM.ext);
+  $("#pmetaFalta").textContent = PM.crm===null ? "…" : !meta ? "—" : fiz>=meta ? "Meta batida! ✔" : fmtN(meta - fiz);
+  $("#pmeta button[type=submit]").disabled = !d.ok || PM.crm===null;
+}
+let trocaDatas = 0;
+async function datasMudaram(){
+  const d = datasPainel(), id = ++trocaDatas;
+  PM.crm = null; $("#fizInp").value = ""; atualizarPainelMeta();
+  if(!d.ok) return;
+  try{ await carregarCrmPeriodo(d.ini, d.fim); }
+  catch(e){ if(id===trocaDatas){ $("#pmetaSt").textContent = "Não consegui contar as matrículas do período: " + e.message; } return; }
+  if(id===trocaDatas) atualizarPainelMeta();
 }
 function abrirPainelMeta(){
+  const P = periodo();
   $("#pmeta").hidden = false; $("#btnMeta").setAttribute("aria-expanded","true"); $("#btnMeta").classList.add("ativo");
-  $("#metaInp").value = lerMeta() || "";
-  $("#pmetaSt").textContent = "";
-  const v = feitasNoMes();
-  crmAoAbrir = v ? v.m : null;
-  $("#fizInp").value = v ? v.m + lerExtras() : "";
-  atualizarPainelMeta();
+  $("#iniInp").value = P.ini; $("#fimInp").value = P.fim;
+  $("#metaInp").value = P.meta || "";
+  $("#pmetaSt").textContent = ""; $("#pmetaSt").className = "nota";
+  PM.ext = P.externas|0; PM.crm = null; $("#fizInp").value = "";
+  datasMudaram();
   $("#metaInp").focus(); $("#metaInp").select();
 }
 function fecharPainelMeta(){
@@ -697,15 +727,21 @@ function selecionar(el){
 $("#cards").addEventListener("click", e=>selecionar(e.target.closest("[data-sel]")));
 $("#btnMeta").addEventListener("click", e=>{ e.stopPropagation(); $("#pmeta").hidden ? abrirPainelMeta() : fecharPainelMeta(); });
 $("#metaInp").addEventListener("input", atualizarPainelMeta);          // Falta muda enquanto digita
-$("#fizInp").addEventListener("input", atualizarPainelMeta);
+$("#fizInp").addEventListener("input", ()=>{                        // externas = total digitado - CRM do período
+  const tot = parseInt($("#fizInp").value,10);
+  if(PM.crm!==null && Number.isFinite(tot)) PM.ext = Math.max(0, tot - PM.crm);
+  atualizarPainelMeta();
+});
+$("#iniInp").addEventListener("change", datasMudaram);
+$("#fimInp").addEventListener("change", datasMudaram);
 $("#pmeta").addEventListener("submit", async e=>{
   e.preventDefault();
+  const d = datasPainel(); if(!d.ok || PM.crm===null) return;
   const btn = $("#pmeta button[type=submit]"), st = $("#pmetaSt");
   const meta = Math.max(0, parseInt($("#metaInp").value,10) || 0);
-  const ext = crmAoAbrir!==null ? extrasDigitadas() : lerExtras();
   btn.disabled = true; btn.textContent = "Salvando…"; st.textContent = ""; st.className = "nota";
   try{
-    await salvarMetaComp(meta, ext);
+    await salvarMetaComp({ini:d.ini, fim:d.fim, meta, externas:PM.ext});
     fecharPainelMeta();
   }catch(err){
     console.error(err);
@@ -735,6 +771,8 @@ async function ciclo(){
       atualizarHistorico().then(render).catch(e=>console.error("Histórico:", e));
     await atualizarHoje();
     await carregarMetaComp();                                  // meta compartilhada também a cada 30 s
+    { const P = periodo();                                     // matrículas do CRM no período da meta
+      await carregarCrmPeriodo(P.ini, P.fim).catch(e=>console.error("Período da meta:", e)); }
     verificarNovas();
     S.pronto = true;
     $("#erro").style.display = "none";
